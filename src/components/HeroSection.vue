@@ -125,8 +125,8 @@ onBeforeUnmount(() => swiper?.destroy(true, true))
 <style scoped>
 .hero {
   position: relative;
-  /* 上方讓出固定在頂端的導覽列 */
-  padding: var(--nav-h) 0 0;
+  /* 上方讓出固定在頂端的導覽列（用實際高度，圖片緊貼導覽列底線，不留白縫） */
+  padding: var(--nav-bar-h) 0 0;
   background: transparent;
   overflow: hidden;
 }
@@ -136,7 +136,7 @@ onBeforeUnmount(() => swiper?.destroy(true, true))
 .hb {
   position: relative;
   width: 100%;
-  height: calc(max(100svh, 520px) - var(--nav-h));
+  height: calc(max(100svh, 520px) - var(--nav-bar-h));
 }
 
 .hb__swiper,
