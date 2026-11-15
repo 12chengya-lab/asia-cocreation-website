@@ -3,7 +3,7 @@
  * 首頁主視覺：導覽列下方的滿版「熱門課程」輪播，只放圖片（不放任何文字）。
  * 圖片來自試算表「熱門課程」分頁的 cover 欄位（與實務總覽頁共用同一份資料）；
  * 點圖片會前往該則的連結（沒填連結就不能點）。
- * 一次一張、滿版寬度，高度依圖片比例（1600×628）整張顯示；沒有頁碼點，只有左右箭頭與自動換片，
+ * 一次一張；電腦版鋪滿導覽列下方整個畫面，平板與手機依圖片比例（2:1）整張顯示；沒有頁碼點，只有左右箭頭與自動換片，
  * 到最後一張回到第一張。
  */
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
@@ -131,17 +131,19 @@ onBeforeUnmount(() => swiper?.destroy(true, true))
   overflow: hidden;
 }
 
+/* 電腦版：導覽列以下整個畫面都是輪播；圖片為 2:1（1920×960），以 cover 填滿，
+   重要內容放在中間，上下邊緣在較寬的螢幕上會被裁掉一點 */
 .hb {
   position: relative;
   width: 100%;
+  height: calc(max(100svh, 520px) - var(--nav-h));
 }
 
-/* 區塊高度依橫幅圖片比例（1600×628）計算，整張顯示不裁切 */
 .hb__swiper,
 .hb__slide,
 .hb__single,
 .hb__item {
-  aspect-ratio: 1600 / 628;
+  height: 100%;
 }
 
 .hb__swiper {
@@ -216,7 +218,20 @@ a.hb__item:hover .hb__img {
   pointer-events: none;
 }
 
+/* 平板與手機：高度依圖片比例（2:1），整張顯示不裁切 */
 @media (max-width: 1080px) {
+  .hb {
+    height: auto;
+  }
+
+  .hb__swiper,
+  .hb__slide,
+  .hb__single,
+  .hb__item {
+    height: auto;
+    aspect-ratio: 2 / 1;
+  }
+
   .hb__arrow {
     width: 40px;
     height: 40px;
