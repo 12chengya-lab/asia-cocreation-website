@@ -16,5 +16,5 @@ export const kpis: Kpi[] = [
   { key: 'courses', label: '累積開課', value: 1026, suffix: '', unit: '堂' },
   { key: 'partners', label: '合作單位', value: 34, suffix: '', unit: '個' },
   { key: 'teachers', label: '合作講師', value: 46, suffix: '', unit: '位' },
-  { key: 'learners', label: '學員人數', value: 5146, suffix: '', unit: '名' },
+  { key: 'learners', label: '學員人數', value: 51460, suffix: '', unit: '名' },
 ]

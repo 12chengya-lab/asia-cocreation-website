@@ -30,14 +30,7 @@ function backToTop() {
 
     <div class="container">
       <div class="foot__grid">
-        <div class="foot__brand">
-          <RouterLink to="/" aria-label="亞洲共創學院 回到首頁" class="foot__logo">
-            <BrandLogo show-company />
-          </RouterLink>
-          <p class="foot__intro">{{ brand.intro }}</p>
-        </div>
-
-        <nav class="foot__col" aria-labelledby="foot-sitemap">
+        <nav class="foot__col foot__col--nav" aria-labelledby="foot-sitemap">
           <h2 id="foot-sitemap" class="foot__heading">網站地圖</h2>
           <ul>
             <li v-for="item in footerNavItems" :key="item.to">
@@ -60,8 +53,15 @@ function backToTop() {
               </dd>
             </div>
           </dl>
-          <!-- 公司地址的 Google 地圖小地圖 -->
-          <ContactMap :height="150" class="foot__map" />
+        </div>
+
+        <!-- 右側：Logo、簡介，下方是公司地址的 Google 地圖小地圖 -->
+        <div class="foot__brand">
+          <RouterLink to="/" aria-label="亞洲共創學院 回到首頁" class="foot__logo">
+            <BrandLogo show-company />
+          </RouterLink>
+          <p class="foot__intro">{{ brand.intro }}</p>
+          <ContactMap :height="200" class="foot__map" />
         </div>
       </div>
 
@@ -113,7 +113,8 @@ function backToTop() {
 
 .foot__grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1.3fr;
+  /* 網站地圖（窄）→ 聯絡資訊 → 品牌與小地圖 */
+  grid-template-columns: 0.55fr 1.25fr 1.2fr;
   gap: 48px;
   padding-bottom: 56px;
 }
@@ -124,7 +125,7 @@ function backToTop() {
 }
 
 .foot__intro {
-  max-width: 380px;
+  max-width: 560px;
   margin-top: 22px;
   font-size: var(--foot-fs);
   line-height: var(--foot-lh);
@@ -197,7 +198,7 @@ function backToTop() {
 }
 
 .foot__map {
-  margin-top: 18px;
+  margin-top: 28px;
 }
 
 /* 點擊撥號：與全站文字連結相同，滑過時黃色底線展開 */
@@ -252,8 +253,10 @@ function backToTop() {
     grid-template-columns: 1fr 1fr;
   }
 
+  /* 平板與手機：品牌與小地圖放最上面，橫跨整列 */
   .foot__brand {
     grid-column: 1 / -1;
+    order: -1;
   }
 }
 
