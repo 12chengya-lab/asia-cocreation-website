@@ -144,6 +144,8 @@ function toCases(rows: Row[]): CaseItem[] {
   const out = rows
     .map((r, index) => {
       if (!bool(r.show, true) || !r.title) return null
+      // sample 欄為「是」的示意案例不對外顯示，補好內容並改成「否」後才會出現
+      if (bool(r.sample, false)) return null
       const category = categoryByLabel[r.category?.trim()]
       if (!category) {
         console.warn(`[試算表] 案例「${r.title}」的分類「${r.category}」無法辨識，已略過`)
