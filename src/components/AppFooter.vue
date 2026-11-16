@@ -72,7 +72,6 @@ const backToTop = scrollToTop
 
       <div class="foot__bottom">
         <p>© {{ year }} {{ brand.company }}｜版權所有</p>
-        <p class="foot__demo">本網站目前為展示版本（DEMO），部分資料待補。</p>
         <button type="button" class="foot__top" aria-label="回到頁面頂端" @click="backToTop">
           <ArrowUp :size="18" />
         </button>
@@ -227,10 +226,6 @@ const backToTop = scrollToTop
   border-top: 1px solid var(--c-line);
   font-size: 0.88rem;
   color: var(--c-text-2);
-}
-
-.foot__demo {
-  color: var(--c-text-3);
 }
 
 .foot__top {
