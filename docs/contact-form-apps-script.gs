@@ -32,8 +32,11 @@ const SPREADSHEET_ID = '10hVcYi8v4QbhaHbW4P6eE_Lc9DCiMGetcpHjVQ2YL8M'
 /** 存放表單資料的分頁名稱（第一次收到表單時會自動建立） */
 const SHEET_NAME = '聯絡表單'
 
-/** 收到表單時是否寄 Email 通知（寄到部署這個程式的帳號） */
+/** 收到表單時是否寄 Email 通知 */
 const NOTIFY_BY_EMAIL = true
+
+/** 通知信的收件信箱（只寄給這幾個，不會再寄給其他人，包含部署這個程式的帳號）。要增減就改這裡 */
+const NOTIFY_TO = ['asia.alliance2020@gmail.com', '12chengya@gmail.com']
 
 /** 「送出時間」一律用台北時間顯示（試算表預設可能是美國時區，會差十幾個小時） */
 const TIME_ZONE = 'Asia/Taipei'
@@ -242,7 +245,7 @@ function fixOldTimes_(apply) {
 }
 
 function notify(row) {
-  const to = Session.getEffectiveUser().getEmail()
+  const to = NOTIFY_TO.join(',')
   if (!to) return
   const body = [
     '網站「聯絡我們」收到一則新的洽詢：',
