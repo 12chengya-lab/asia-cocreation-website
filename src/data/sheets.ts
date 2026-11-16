@@ -49,4 +49,4 @@ export const sheetSources = {
  * - 留空字串＝表單維持「展示版本」，只檢查欄位、不送出
  */
 export const contactFormEndpoint =
-  'https://script.google.com/macros/s/AKfycbx3lG_StNQxN_0mG32hVKldne6Kuv-4G-sYWeWm9FuPUkvPPr3TbiWZbwHZ2-60hTPy/exec'
+  'https://script.google.com/macros/s/AKfycbyw6zFMC_bqq1__A-Mv1PuRHjXt7rGyv9sbSQcYhuSZv2ujlM7dq8uGO6280rcniIX9/exec'
