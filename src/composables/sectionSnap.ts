@@ -46,13 +46,29 @@ export function useSectionSnap(root: Ref<HTMLElement | null>) {
     return Math.max(0, Math.round(top - Math.max(0, NAV_CLEARANCE - padding)))
   }
 
-  /** 各區塊的停靠位置，最後再加上頁面底部（頁尾） */
-  function targets() {
+  /**
+   * 版面位置快取：getBoundingClientRect / getComputedStyle 會強制重排，
+   * 不能在每個滾輪、捲動事件都算。只在版面可能改變（尺寸變動、圖片載入）後重算一次。
+   */
+  let layout: { targets: number[]; tops: number[] } | null = null
+  const invalidate = () => {
+    layout = null
+  }
+
+  function getLayout() {
+    if (layout) return layout
     const end = maxScroll()
     const list = sections.value.map((s, i) => (i === 0 ? 0 : Math.min(snapTop(s.el), end)))
     if (list.length && end - list[list.length - 1] > EDGE) list.push(end)
-    return list
+    layout = {
+      targets: list,
+      tops: sections.value.map((s) => s.el.getBoundingClientRect().top + window.scrollY),
+    }
+    return layout
   }
+
+  /** 各區塊的停靠位置，最後再加上頁面底部（頁尾） */
+  const targets = () => getLayout().targets
 
   function animateTo(top: number) {
     cancelAnimationFrame(frame)
@@ -96,7 +112,9 @@ export function useSectionSnap(root: Ref<HTMLElement | null>) {
       return next - y > vh + EDGE ? 'native' : next
     }
     if (y > list[i] + EDGE) return y - list[i] > vh ? 'native' : list[i]
-    return i > 0 ? list[i - 1] : null
+    if (i === 0) return null
+    // 與往下對稱：上一區比視窗高時，先以一般捲動看完，不要一次跳到它的頂端
+    return y - list[i - 1] > vh + EDGE ? 'native' : list[i - 1]
   }
 
   /** 回傳 true 代表已處理（應阻止瀏覽器預設捲動） */
@@ -156,11 +174,13 @@ export function useSectionSnap(root: Ref<HTMLElement | null>) {
   function onScroll() {
     const line = window.scrollY + window.innerHeight * 0.4
     let idx = 0
-    sections.value.forEach((s, i) => {
-      if (s.el.getBoundingClientRect().top + window.scrollY <= line) idx = i
+    getLayout().tops.forEach((top, i) => {
+      if (top <= line) idx = i
     })
-    active.value = idx
+    if (active.value !== idx) active.value = idx
   }
+
+  let resizeObserver: ResizeObserver | null = null
 
   onMounted(() => {
     collect()
@@ -169,13 +189,24 @@ export function useSectionSnap(root: Ref<HTMLElement | null>) {
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('keydown', onKeydown)
     window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', invalidate)
+    window.addEventListener('load', invalidate)
+    // 內容高度變動（圖片載入、試算表資料載入、輪播）時重算快取
+    if ('ResizeObserver' in window && root.value) {
+      resizeObserver = new ResizeObserver(invalidate)
+      resizeObserver.observe(root.value)
+      sections.value.forEach((s) => resizeObserver?.observe(s.el))
+    }
   })
 
   onBeforeUnmount(() => {
     cancelAnimationFrame(frame)
+    resizeObserver?.disconnect()
     window.removeEventListener('wheel', onWheel)
     window.removeEventListener('keydown', onKeydown)
     window.removeEventListener('scroll', onScroll)
+    window.removeEventListener('resize', invalidate)
+    window.removeEventListener('load', invalidate)
     document.documentElement.classList.remove('snap-mode')
   })
 
