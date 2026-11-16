@@ -17,8 +17,8 @@
  * 之後若修改這份程式，要到「部署 → 管理部署作業 → 編輯 → 版本：新版本」重新部署，
  * 網址不會改變。
  *
- * 時間：「送出時間」顯示台北時間（Asia/Taipei）。第一次執行時會把這份試算表的時區改成台北，
- * 舊紀錄也會一起變成台北時間；也可以在編輯器手動執行 setupTaipeiTime() 立刻套用。
+ * 時間：「送出時間」寫入的是台北時間（Asia/Taipei）的牆上時鐘數字，不受試算表時區設定影響。
+ * 注意：改試算表時區「不會」修正已存的舊時間。舊資料要用 previewFixOldTimes() 預覽、fixOldTimes() 修正（只需一次）。
  *
  * ⚠ 隱私：這份試算表含有訪客的個人資料，請勿「發布到網路」，也不要共用給「知道連結的任何人」。
  */
@@ -40,7 +40,16 @@ const TIME_ZONE = 'Asia/Taipei'
 const TIME_FORMAT = 'yyyy/MM/dd HH:mm:ss'
 
 /** 程式版本：用瀏覽器打開網頁應用程式網址，會看到這個值，可確認部署的是不是新版 */
-const SCRIPT_VERSION = 'taipei-time-2026-11-16'
+const SCRIPT_VERSION = 'taipei-time-2026-11-16-b'
+
+/**
+ * 試算表存的日期時間，其實只是「牆上時鐘的數字」，沒有時區；改試算表時區不會改變已存的數字。
+ * 所以新資料不交給 Date 轉換，而是直接寫入「台北牆上時鐘」的數字，不受任何時區設定影響。
+ */
+function taipeiSerial(date) {
+  const p = Utilities.formatDate(date, TIME_ZONE, 'yyyy,MM,dd,HH,mm,ss').split(',').map(Number)
+  return (Date.UTC(p[0], p[1] - 1, p[2], p[3], p[4], p[5]) - Date.UTC(1899, 11, 30)) / 86400000
+}
 
 /** 現在的台北時間文字，例如 2026/11/16 14:30:05（寫 log 用，不受試算表或帳號時區影響） */
 function taipeiNow() {
@@ -86,8 +95,10 @@ function doPost(e) {
 
     lock.waitLock(10000)
     const sheet = getSheet()
-    sheet.appendRow([new Date(), row.name, row.org, row.email, row.need, row.message, row.page, '未處理'])
-    log('已寫入第 ' + sheet.getLastRow() + ' 列，來源頁面 ' + (row.page || '（未提供）'))
+    sheet.appendRow([taipeiSerial(new Date()), row.name, row.org, row.email, row.need, row.message, row.page, '未處理'])
+    const last = sheet.getLastRow()
+    sheet.getRange(last, 1).setNumberFormat(TIME_FORMAT)
+    log('已寫入第 ' + last + ' 列，試算表上顯示的送出時間：' + sheet.getRange(last, 1).getDisplayValue())
 
     if (NOTIFY_BY_EMAIL) {
       notify(row)
@@ -121,7 +132,7 @@ function safeCell(value) {
 function getSheet() {
   // 用 ID 開啟：不論程式是附加在試算表上、或是獨立的 Apps Script 專案都能運作
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID)
-  // 時間存的是正確的時刻，只是顯示用試算表的時區；改成台北後，舊紀錄也會一起變成台北時間
+  // 試算表時區：影響 NOW() 等公式與日後的轉換。注意這「不會」改動已存的時間數字（見 taipeiSerial 的說明）
   if (ss.getSpreadsheetTimeZone() !== TIME_ZONE) {
     log('試算表時區原本是 ' + ss.getSpreadsheetTimeZone() + '，改成 ' + TIME_ZONE)
     ss.setSpreadsheetTimeZone(TIME_ZONE)
@@ -150,7 +161,7 @@ function getSheet() {
 
 /**
  * 手動執行一次即可：把試算表時區改成台北，並統一「送出時間」格式。
- * 不想等下一筆表單送出時，在 Apps Script 編輯器選這個函式按「執行」。
+ * 會印出最新一列在試算表上「實際顯示」的時間，方便跟現在的台北時間對照。
  */
 function setupTaipeiTime() {
   log('程式版本 ' + SCRIPT_VERSION + '，開始套用台北時間')
@@ -159,12 +170,53 @@ function setupTaipeiTime() {
   log('試算表：' + ss.getName() + '　分頁：' + sheet.getName() + '　目前共 ' + sheet.getLastRow() + ' 列')
   log('試算表時區：' + ss.getSpreadsheetTimeZone() + '　（應為 ' + TIME_ZONE + '）')
   if (sheet.getLastRow() >= 2) {
-    // 讀最新一列的「送出時間」，用台北時間格式印出，方便跟試算表上看到的對照
-    const last = sheet.getRange(sheet.getLastRow(), 1).getValue()
-    if (last instanceof Date) log('最新一列的送出時間：' + Utilities.formatDate(last, TIME_ZONE, TIME_FORMAT))
-    else log('最新一列的送出時間不是日期格式，內容為：' + last)
+    log('最新一列在試算表上顯示的送出時間：' + sheet.getRange(sheet.getLastRow(), 1).getDisplayValue())
   }
   log('完成')
+}
+
+/**
+ * 【一次性】修正舊資料：在試算表時區還是美國時間時寫入的紀錄，時間數字比台北慢 16 小時。
+ * 規則：「送出時間」落在下面這段範圍內的列，一律加 16 小時。
+ *   範圍＝2026/11/15 20:00 ～ 2026/11/16 06:00（就是那批寫錯的測試與洽詢；範圍之外的列不動）
+ * 修正後的時間會落到 11/16 中午之後，不在範圍內，所以重複執行也不會再加。
+ * 先執行 previewFixOldTimes() 看會改哪幾列，確認沒問題再執行 fixOldTimes()。
+ */
+const FIX_FROM = Date.UTC(2026, 10, 15, 20, 0, 0)
+const FIX_TO = Date.UTC(2026, 10, 16, 6, 0, 0)
+const FIX_SHIFT_MS = 16 * 3600 * 1000
+
+function previewFixOldTimes() {
+  fixOldTimes_(false)
+}
+
+function fixOldTimes() {
+  fixOldTimes_(true)
+}
+
+function fixOldTimes_(apply) {
+  const sheet = getSheet()
+  const last = sheet.getLastRow()
+  if (last < 2) return log('沒有資料')
+  // 用「畫面上顯示的文字」判斷，不經過任何時區換算
+  const shown = sheet.getRange(2, 1, last - 1, 1).getDisplayValues()
+  let count = 0
+  shown.forEach(function (cell, i) {
+    const m = String(cell[0]).match(/^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2}):(\d{2})$/)
+    if (!m) return
+    const wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])
+    if (wall < FIX_FROM || wall >= FIX_TO) return
+    const fixed = wall + FIX_SHIFT_MS
+    const text = Utilities.formatDate(new Date(fixed), 'UTC', TIME_FORMAT)
+    log('第 ' + (i + 2) + ' 列：' + cell[0] + ' → ' + text)
+    if (apply) {
+      const cellRange = sheet.getRange(i + 2, 1)
+      cellRange.setValue((fixed - Date.UTC(1899, 11, 30)) / 86400000)
+      cellRange.setNumberFormat(TIME_FORMAT)
+    }
+    count++
+  })
+  log((apply ? '已修正 ' : '預覽：會修正 ') + count + ' 列')
 }
 
 function notify(row) {
