@@ -39,6 +39,22 @@ const NOTIFY_BY_EMAIL = true
 const TIME_ZONE = 'Asia/Taipei'
 const TIME_FORMAT = 'yyyy/MM/dd HH:mm:ss'
 
+/** 程式版本：用瀏覽器打開網頁應用程式網址，會看到這個值，可確認部署的是不是新版 */
+const SCRIPT_VERSION = 'taipei-time-2026-11-16'
+
+/** 現在的台北時間文字，例如 2026/11/16 14:30:05（寫 log 用，不受試算表或帳號時區影響） */
+function taipeiNow() {
+  return Utilities.formatDate(new Date(), TIME_ZONE, TIME_FORMAT)
+}
+
+/**
+ * 寫一行 log 到「執行記錄」，開頭固定是台北時間。
+ * 注意：log 只寫時間與處理結果，不要寫訪客的姓名、信箱、留言等個人資料。
+ */
+function log(message) {
+  console.log('[' + taipeiNow() + ' 台北時間] ' + message)
+}
+
 const HEADERS = ['送出時間', '姓名', '單位名稱', '電子郵件', '合作需求', '留言', '來源頁面', '處理狀態']
 
 /** 各欄位長度上限，避免被灌入過長內容 */
@@ -53,7 +69,10 @@ function doPost(e) {
     const data = JSON.parse((e && e.postData && e.postData.contents) || '{}')
 
     // 防垃圾訊息：隱藏欄位被填寫、或填寫時間過短 → 假裝成功，不寫入
-    if (data.website || Number(data.elapsed) < MIN_FILL_MS) return json({ ok: true })
+    if (data.website || Number(data.elapsed) < MIN_FILL_MS) {
+      log('收到表單，疑似機器人（隱藏欄位被填或填寫太快），已忽略')
+      return json({ ok: true })
+    }
 
     const row = {}
     Object.keys(LIMITS).forEach(function (key) {
@@ -61,15 +80,22 @@ function doPost(e) {
     })
 
     if (!row.name || !row.message || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+      log('收到表單，但欄位不完整或 Email 格式不對，未寫入')
       return json({ ok: false, error: 'invalid' })
     }
 
     lock.waitLock(10000)
-    getSheet().appendRow([new Date(), row.name, row.org, row.email, row.need, row.message, row.page, '未處理'])
+    const sheet = getSheet()
+    sheet.appendRow([new Date(), row.name, row.org, row.email, row.need, row.message, row.page, '未處理'])
+    log('已寫入第 ' + sheet.getLastRow() + ' 列，來源頁面 ' + (row.page || '（未提供）'))
 
-    if (NOTIFY_BY_EMAIL) notify(row)
+    if (NOTIFY_BY_EMAIL) {
+      notify(row)
+      log('已寄出通知信')
+    }
     return json({ ok: true })
   } catch (err) {
+    log('處理表單時發生錯誤：' + err)
     console.error(err)
     return json({ ok: false, error: 'server' })
   } finally {
@@ -83,7 +109,8 @@ function doPost(e) {
 
 /** 用瀏覽器打開網址時顯示，方便確認部署成功 */
 function doGet() {
-  return json({ ok: true, service: '亞洲共創學院網站聯絡表單' })
+  // version：用來確認「部署出去的是不是最新版程式」，改程式時順手換個值
+  return json({ ok: true, service: '亞洲共創學院網站聯絡表單', version: SCRIPT_VERSION, timeZone: TIME_ZONE })
 }
 
 /** 開頭是 = + - @ 的內容在試算表中會被當成公式，前面加 ' 讓它保持純文字 */
@@ -95,7 +122,10 @@ function getSheet() {
   // 用 ID 開啟：不論程式是附加在試算表上、或是獨立的 Apps Script 專案都能運作
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID)
   // 時間存的是正確的時刻，只是顯示用試算表的時區；改成台北後，舊紀錄也會一起變成台北時間
-  if (ss.getSpreadsheetTimeZone() !== TIME_ZONE) ss.setSpreadsheetTimeZone(TIME_ZONE)
+  if (ss.getSpreadsheetTimeZone() !== TIME_ZONE) {
+    log('試算表時區原本是 ' + ss.getSpreadsheetTimeZone() + '，改成 ' + TIME_ZONE)
+    ss.setSpreadsheetTimeZone(TIME_ZONE)
+  }
   let sheet = ss.getSheetByName(SHEET_NAME)
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME)
@@ -123,7 +153,18 @@ function getSheet() {
  * 不想等下一筆表單送出時，在 Apps Script 編輯器選這個函式按「執行」。
  */
 function setupTaipeiTime() {
-  getSheet()
+  log('程式版本 ' + SCRIPT_VERSION + '，開始套用台北時間')
+  const sheet = getSheet()
+  const ss = sheet.getParent()
+  log('試算表：' + ss.getName() + '　分頁：' + sheet.getName() + '　目前共 ' + sheet.getLastRow() + ' 列')
+  log('試算表時區：' + ss.getSpreadsheetTimeZone() + '　（應為 ' + TIME_ZONE + '）')
+  if (sheet.getLastRow() >= 2) {
+    // 讀最新一列的「送出時間」，用台北時間格式印出，方便跟試算表上看到的對照
+    const last = sheet.getRange(sheet.getLastRow(), 1).getValue()
+    if (last instanceof Date) log('最新一列的送出時間：' + Utilities.formatDate(last, TIME_ZONE, TIME_FORMAT))
+    else log('最新一列的送出時間不是日期格式，內容為：' + last)
+  }
+  log('完成')
 }
 
 function notify(row) {
