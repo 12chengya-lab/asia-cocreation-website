@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Phone, Mail, MapPin, Clock, Info, CircleCheck, CircleAlert } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -45,6 +45,32 @@ const errors = reactive<Record<string, string>>({})
 /** idle：尚未送出｜checked：展示版本檢查完成｜sending：送出中｜sent：成功｜error：失敗 */
 const status = ref<'idle' | 'checked' | 'sending' | 'sent' | 'error'>('idle')
 const sending = computed(() => status.value === 'sending')
+
+/** 送出成功時用彈跳視窗（<dialog>）告知；瀏覽器太舊不支援時，退回表單下方的提示文字 */
+const supportsDialog = typeof HTMLDialogElement !== 'undefined' && typeof HTMLDialogElement.prototype.showModal === 'function'
+const doneDialog = ref<HTMLDialogElement | null>(null)
+
+watch(status, async (value) => {
+  if (value !== 'sent' || !supportsDialog) return
+  await nextTick()
+  const dialog = doneDialog.value
+  if (dialog && !dialog.open) dialog.showModal()
+})
+
+function closeDone() {
+  doneDialog.value?.close()
+}
+
+/** 點視窗外的灰色背景也能關閉（背景被點到時，事件目標是 <dialog> 本身） */
+function onDoneClick(e: MouseEvent) {
+  if (e.target === doneDialog.value) closeDone()
+}
+
+/** 關閉後（按鈕、Esc、點背景都會觸發）：清掉成功狀態，並把焦點還給送出按鈕 */
+function onDoneClosed() {
+  status.value = 'idle'
+  document.querySelector<HTMLButtonElement>('.form__foot button[type="submit"]')?.focus()
+}
 
 /** 防垃圾訊息：真人看不到、不會填的欄位，以及開始填寫到送出的時間 */
 const honeypot = ref('')
@@ -200,7 +226,7 @@ async function onSubmit() {
               <p v-if="status === 'checked'" class="form__result">
                 欄位檢查完成。<strong>此為展示版本，訊息並未送出</strong>，正式上線前需串接表單寄送服務。
               </p>
-              <p v-else-if="status === 'sent'" class="form__result form__result--ok">
+              <p v-else-if="status === 'sent' && !supportsDialog" class="form__result form__result--ok">
                 <CircleCheck :size="20" aria-hidden="true" />
                 <span><strong>已收到您的洽詢！</strong>我們會盡快與您聯繫，謝謝您。</span>
               </p>
@@ -216,6 +242,23 @@ async function onSubmit() {
         </div>
       </div>
     </section>
+
+    <!-- 送出成功的彈跳視窗：原生 <dialog>，自帶焦點鎖定、Esc 關閉、背景不可操作 -->
+    <dialog
+      ref="doneDialog"
+      class="done"
+      aria-labelledby="done-title"
+      aria-describedby="done-desc"
+      @click="onDoneClick"
+      @close="onDoneClosed"
+    >
+      <div class="done__box">
+        <span class="done__icon" aria-hidden="true"><CircleCheck :size="36" /></span>
+        <h2 id="done-title" class="done__title">已收到您的洽詢！</h2>
+        <p id="done-desc" class="done__text">我們會盡快與您聯繫，謝謝您。</p>
+        <BaseButton variant="dark" @click="closeDone">好的</BaseButton>
+      </div>
+    </dialog>
   </div>
 </template>
 
@@ -434,6 +477,91 @@ async function onSubmit() {
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* 送出成功的彈跳視窗 */
+.done {
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xl);
+  background: #fff;
+  color: var(--c-text);
+  box-shadow: var(--shadow-lg);
+}
+
+.done::backdrop {
+  background: rgba(34, 34, 34, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+.done__box {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 40px 32px 32px;
+  text-align: center;
+}
+
+.done__icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--c-yellow);
+  color: var(--c-text);
+}
+
+.done__title {
+  font-size: 1.5rem;
+}
+
+.done__title,
+.done__text {
+  text-wrap: balance;
+}
+
+.done__text {
+  margin-bottom: 8px;
+  color: var(--c-text-2);
+  line-height: 1.8;
+}
+
+.done[open] {
+  animation: done-in 0.3s var(--ease-out) both;
+}
+
+.done[open]::backdrop {
+  animation: done-fade 0.3s ease both;
+}
+
+@keyframes done-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes done-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done[open],
+  .done[open]::backdrop {
+    animation: none;
+  }
 }
 
 .form__privacy {
