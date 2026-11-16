@@ -11,7 +11,7 @@ html {
 
 /* 首頁桌面版各區塊已自行預留導覽列空間 */
 @media (min-width: 1024px) {
-  html.snap-mode {
+  html.home-sections {
     scroll-padding-top: 0;
   }
 }

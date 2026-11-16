@@ -215,7 +215,7 @@ function restart() {
 </script>
 
 <template>
-  <div class="faq" :class="{ 'is-open': open }" data-snap-ignore @keydown.esc="open && toggle(false)">
+  <div class="faq" :class="{ 'is-open': open }" @keydown.esc="open && toggle(false)">
     <Transition name="faq-pop">
       <section
         v-show="open"

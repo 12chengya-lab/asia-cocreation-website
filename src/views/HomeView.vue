@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { ArrowRight } from '@lucide/vue'
 import HeroSection from '@/components/HeroSection.vue'
 import LecturerAlliance from '@/components/LecturerAlliance.vue'
@@ -10,14 +10,16 @@ import PartnerWall from '@/components/PartnerWall.vue'
 import CtaBanner from '@/components/CtaBanner.vue'
 import HomeBackdrop from '@/components/HomeBackdrop.vue'
 import { casesSection } from '@/data/home'
-import { useSectionSnap } from '@/composables/sectionSnap'
 
-const root = ref<HTMLElement | null>(null)
-useSectionSnap(root)
+/* 首頁桌機版各區塊已自行預留導覽列空間（見下方樣式），
+   標記在 <html> 上，讓錨點跳轉（base.css、router.ts）直接對齊區塊頂端 */
+const HOME_CLASS = 'home-sections'
+onMounted(() => document.documentElement.classList.add(HOME_CLASS))
+onBeforeUnmount(() => document.documentElement.classList.remove(HOME_CLASS))
 </script>
 
 <template>
-  <div ref="root" class="page home">
+  <div class="page home">
     <!-- 最底層的背景點綴（網點、虛線、幾何圖形） -->
     <HomeBackdrop />
     <!-- 01 主視覺（服務項目圖卡＋熱門課程輪播） -->
@@ -58,7 +60,7 @@ useSectionSnap(root)
   isolation: isolate;
 }
 
-/* 桌面：每個區塊佔滿一個畫面，內容垂直置中，頂端預留導覽列（搭配區塊快捷捲動）
+/* 桌面：每個區塊佔滿一個畫面，內容垂直置中，頂端預留導覽列
    Hero 自行處理版面（桌機版導覽列在 Hero 底部），不套用這裡的留白 */
 @media (min-width: 1024px) {
   .home > [data-snap]:not(.hero) {
