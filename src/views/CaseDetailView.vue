@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -16,12 +16,23 @@ const related = computed(() =>
   item.value ? cases.value.filter((c) => c.category === item.value!.category && c.id !== item.value!.id).slice(0, 2) : [],
 )
 
-/** 詳情三個區塊：試算表有填就顯示內容，沒填顯示「待補」 */
-const blocks = computed(() => [
-  { label: '合作背景', text: item.value?.background },
-  { label: '執行內容', text: item.value?.execution },
-  { label: '合作成果', text: item.value?.result },
-])
+/** 詳情三個區塊：只顯示試算表有填的欄位，沒填的整列不出現 */
+const blocks = computed(() =>
+  [
+    { label: '合作背景', text: item.value?.background?.trim() },
+    { label: '執行內容', text: item.value?.execution?.trim() },
+    { label: '合作成果', text: item.value?.result?.trim() },
+  ].filter((b) => b.text),
+)
+
+// 案例名稱寫進分頁標題與描述
+watchEffect(() => {
+  if (!item.value) return
+  document.title = `${item.value.title}｜實務總覽｜亞洲共創學院`
+  document
+    .querySelector<HTMLMetaElement>('meta[name="description"]')
+    ?.setAttribute('content', item.value.excerpt || item.value.title)
+})
 </script>
 
 <template>
@@ -47,11 +58,10 @@ const blocks = computed(() => [
               <span v-if="item.partner">合作單位：{{ item.partner }}</span>
               <span v-if="item.date">{{ item.date }}</span>
             </p>
-            <dl class="detail__blocks">
+            <dl v-if="blocks.length" class="detail__blocks">
               <div v-for="(b, i) in blocks" :key="b.label" v-reveal="i * 80">
                 <dt>{{ b.label }}</dt>
-                <dd v-if="b.text" class="detail__text">{{ b.text }}</dd>
-                <dd v-else><span class="pending-tag">待補</span></dd>
+                <dd class="detail__text">{{ b.text }}</dd>
               </div>
             </dl>
             <RouterLink to="/cases" class="link-arrow detail__back">
