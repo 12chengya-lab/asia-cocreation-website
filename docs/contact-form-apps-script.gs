@@ -40,7 +40,7 @@ const TIME_ZONE = 'Asia/Taipei'
 const TIME_FORMAT = 'yyyy/MM/dd HH:mm:ss'
 
 /** 程式版本：用瀏覽器打開網頁應用程式網址，會看到這個值，可確認部署的是不是新版 */
-const SCRIPT_VERSION = 'taipei-time-2026-11-16-b'
+const SCRIPT_VERSION = 'taipei-time-2026-11-16-c'
 
 /**
  * 試算表存的日期時間，其實只是「牆上時鐘的數字」，沒有時區；改試算表時區不會改變已存的數字。
@@ -95,8 +95,12 @@ function doPost(e) {
 
     lock.waitLock(10000)
     const sheet = getSheet()
-    sheet.appendRow([taipeiSerial(new Date()), row.name, row.org, row.email, row.need, row.message, row.page, '未處理'])
-    const last = sheet.getLastRow()
+    // 不用 appendRow：它會放在「任何欄位有內容的最後一列」之後，
+    // 例如刪掉舊資料時漏了「處理狀態」那欄，新資料就會被推到很下面
+    const last = nextRow(sheet)
+    sheet
+      .getRange(last, 1, 1, HEADERS.length)
+      .setValues([[taipeiSerial(new Date()), row.name, row.org, row.email, row.need, row.message, row.page, '未處理']])
     sheet.getRange(last, 1).setNumberFormat(TIME_FORMAT)
     log('已寫入第 ' + last + ' 列，試算表上顯示的送出時間：' + sheet.getRange(last, 1).getDisplayValue())
 
@@ -127,6 +131,24 @@ function doGet() {
 /** 開頭是 = + - @ 的內容在試算表中會被當成公式，前面加 ' 讓它保持純文字 */
 function safeCell(value) {
   return /^[=+\-@\t\r]/.test(value) ? "'" + value : value
+}
+
+/**
+ * 下一筆資料要寫的列：只看 A 欄（送出時間）最後一個有內容的列，往下一列。
+ * 第 1 列是標題；A 欄都是空的就從第 2 列開始。
+ */
+function nextRow(sheet) {
+  const max = sheet.getMaxRows()
+  const values = sheet.getRange(1, 1, max, 1).getValues()
+  let lastUsed = 1
+  for (let i = values.length - 1; i >= 1; i--) {
+    if (values[i][0] !== '') {
+      lastUsed = i + 1
+      break
+    }
+  }
+  if (lastUsed + 1 > max) sheet.insertRowsAfter(max, 1)
+  return lastUsed + 1
 }
 
 function getSheet() {
