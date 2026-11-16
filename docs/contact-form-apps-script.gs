@@ -1,7 +1,7 @@
 /**
  * 亞洲共創學院網站｜聯絡表單 → Google 試算表
  *
- * 資料寫入「私人」試算表「亞創網站｜聯絡表單紀錄（含個資，請勿公開）」（mcu.comm04 雲端硬碟最上層），
+ * 資料寫入「私人」試算表「亞創網站｜聯絡表單紀錄（含個資，請勿公開）」（12chengya@gmail.com 雲端硬碟），
  * 與公開的網站內容試算表分開存放。
  *
  * 重新安裝方式（只在需要重建時）：
@@ -9,7 +9,7 @@
  *    （或到 script.google.com 新增專案）
  * 2. 刪除編輯器裡原本的內容，把這整個檔案貼上，按「儲存」
  * 3. 右上角「部署 → 新增部署作業」→ 類型選「網頁應用程式」
- *    - 執行身分：我（mcu.comm04@me.mcu.edu.tw）
+ *    - 執行身分：我（12chengya@gmail.com）
  *    - 誰可以存取：所有人
  * 4. 按「部署」，依畫面授權（會詢問存取試算表與寄信的權限）
  * 5. 複製「網頁應用程式」網址（https://script.google.com/macros/s/.../exec）給工程師
@@ -22,9 +22,9 @@
 
 /**
  * 存放表單資料的私人試算表「亞創網站｜聯絡表單紀錄（含個資，請勿公開）」的 ID
- * （網址 /d/ 與 /edit 之間那一段）。此試算表只開放 mcu.comm04 帳號，請勿共用給「任何人」。
+ * （網址 /d/ 與 /edit 之間那一段）。此試算表只開放 12chengya@gmail.com 帳號，請勿共用給「任何人」。
  */
-const SPREADSHEET_ID = '17PbVGeNKCp-ypk_xaEDaeozZtbksJeNq162QVZi4Pgw'
+const SPREADSHEET_ID = '10hVcYi8v4QbhaHbW4P6eE_Lc9DCiMGetcpHjVQ2YL8M'
 
 /** 存放表單資料的分頁名稱（第一次收到表單時會自動建立） */
 const SHEET_NAME = '聯絡表單'
