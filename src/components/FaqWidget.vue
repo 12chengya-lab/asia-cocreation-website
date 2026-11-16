@@ -17,8 +17,6 @@ type Msg =
 type BotMsg = Exclude<Msg, { from: 'user' }>
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never
 
-const AUDIENCE_KEY = 'acc-faq-audience'
-const HINT_KEY = 'acc-faq-hint-dismissed'
 /** 進站後多久跳出提示泡泡 */
 const HINT_DELAY = 1800
 
@@ -33,28 +31,11 @@ const listEl = ref<HTMLElement | null>(null)
 const inputEl = ref<HTMLInputElement | null>(null)
 const launcherEl = ref<HTMLButtonElement | null>(null)
 
-/* ---------- 瀏覽器儲存（無痕模式等情況無法儲存時，不影響使用） ---------- */
-function readStore(key: string) {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-function writeStore(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    /* 忽略 */
-  }
-}
-
-/* ---------- 單位類型（記住選擇，下次不用再選） ---------- */
-const stored = readStore(AUDIENCE_KEY)
-const isAudience = (v: string | null): v is Audience => audiences.some((a) => a.key === v)
-const initial = isAudience(stored) || stored === 'none' ? stored : null
-const audience = ref<Audience | null>(initial === 'none' ? null : initial)
-const audienceChosen = ref(initial !== null)
+/* ---------- 單位類型
+   不寫入瀏覽器（localStorage、cookie）：每次進站都是全新對話，
+   訪客下次來可能代表不同單位、想問不同的問題。 ---------- */
+const audience = ref<Audience | null>(null)
+const audienceChosen = ref(false)
 const audienceOption = computed(() => audiences.find((a) => a.key === audience.value))
 
 const ctx = computed<SearchContext>(() => ({ audience: audience.value, page: String(route.name ?? '') }))
@@ -68,11 +49,9 @@ let hintTimer = 0
 
 function dismissHint() {
   hintVisible.value = false
-  writeStore(HINT_KEY, '1')
 }
 
 onMounted(() => {
-  if (readStore(HINT_KEY)) return
   hintTimer = window.setTimeout(() => {
     if (!open.value) hintVisible.value = true
   }, HINT_DELAY)
@@ -114,13 +93,18 @@ function greeting() {
   return `${hello}！${pageGreetings[String(route.name ?? '')] ?? '有什麼想了解的嗎？'}`
 }
 
+/* ---------- 已回答過的題目：推薦時跳過，避免同一題一直出現 ---------- */
+const asked = new Set<string>()
+const notAsked = (list: FaqItem[]) => list.filter((f) => !asked.has(f.id))
+const popular = (limit = 4) => notAsked(popularFaq(ctx.value, 50)).slice(0, limit)
+
 function start() {
   botSay({ kind: 'text', text: greeting() })
   if (!audienceChosen.value) {
     botSay({ kind: 'audience', text: faqCopy.askAudience, done: false })
   } else {
     const text = audienceOption.value ? faqCopy.welcomeBack(audienceOption.value.label) : faqCopy.afterSkip
-    botSay({ kind: 'text', text, chips: popularFaq(ctx.value) })
+    botSay({ kind: 'text', text, chips: popular() })
   }
 }
 
@@ -128,9 +112,8 @@ function chooseAudience(opt: AudienceOption | null) {
   for (const m of messages.value) if (m.from === 'bot' && m.kind === 'audience') m.done = true
   audience.value = opt?.key ?? null
   audienceChosen.value = true
-  writeStore(AUDIENCE_KEY, opt?.key ?? 'none')
   pushUser(opt?.says ?? faqCopy.skipAudience)
-  botSay({ kind: 'text', text: opt ? faqCopy.afterAudience(opt.label) : faqCopy.afterSkip, chips: popularFaq(ctx.value) })
+  botSay({ kind: 'text', text: opt ? faqCopy.afterAudience(opt.label) : faqCopy.afterSkip, chips: popular() })
 }
 
 function switchAudience() {
@@ -138,9 +121,10 @@ function switchAudience() {
 }
 
 function answer(faq: FaqItem, extra: FaqItem[] = []) {
-  const related = [...new Map([...extra, ...relatedFaq(faq, ctx.value)].map((f) => [f.id, f])).values()]
-    .filter((f) => f.id !== faq.id)
-    .slice(0, 3)
+  asked.add(faq.id)
+  // 先用本題設定的相關題目，不足 3 題時再用熱門題目補上；都跳過已問過的
+  const pool = [...extra, ...relatedFaq(faq, ctx.value, 50), ...popularFaq(ctx.value, 50)]
+  const related = notAsked([...new Map(pool.map((f) => [f.id, f])).values()]).slice(0, 3)
   botSay({ kind: 'answer', faq, related })
 }
 
@@ -208,6 +192,7 @@ function onNavigate() {
 
 function restart() {
   messages.value = []
+  asked.clear()
   queue = Promise.resolve()
   typing.value = false
   start()
