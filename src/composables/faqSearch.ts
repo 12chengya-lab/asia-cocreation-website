@@ -87,11 +87,12 @@ export function nearestFaq(query: string, ctx: SearchContext, limit = 3) {
   return near.length ? near : popularFaq(ctx, limit)
 }
 
-/** 開場推薦：符合單位類型的題目，所在頁面相關的排在前面 */
+/** 開場推薦：先列該單位類型專屬的題目，再列所在頁面相關的，最後是通用題目 */
 export function popularFaq(ctx: SearchContext, limit = 4) {
   const list = faqs.filter((f) => fitsAudience(f, ctx.audience))
+  const own = list.filter((f) => ctx.audience && f.audience?.includes(ctx.audience))
   const onPage = list.filter((f) => ctx.page && f.pages?.includes(ctx.page))
-  return [...new Set([...onPage, ...list])].slice(0, limit)
+  return [...new Set([...own, ...onPage, ...list])].slice(0, limit)
 }
 
 /** 「你可能還想知道」：依 related 帶出，過濾不符合單位類型的題目 */

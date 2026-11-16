@@ -51,7 +51,8 @@ function writeStore(key: string, value: string) {
 
 /* ---------- 單位類型（記住選擇，下次不用再選） ---------- */
 const stored = readStore(AUDIENCE_KEY)
-const initial = stored === 'enterprise' || stored === 'academia' || stored === 'none' ? stored : null
+const isAudience = (v: string | null): v is Audience => audiences.some((a) => a.key === v)
+const initial = isAudience(stored) || stored === 'none' ? stored : null
 const audience = ref<Audience | null>(initial === 'none' ? null : initial)
 const audienceChosen = ref(initial !== null)
 const audienceOption = computed(() => audiences.find((a) => a.key === audience.value))
