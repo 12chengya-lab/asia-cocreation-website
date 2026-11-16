@@ -38,12 +38,28 @@ const NOTIFY_BY_EMAIL = true
 /** 通知信的收件信箱（只寄給這幾個，不會再寄給其他人，包含部署這個程式的帳號）。要增減就改這裡 */
 const NOTIFY_TO = ['asia.alliance2020@gmail.com', '12chengya@gmail.com']
 
+/**
+ * 預期「部署並執行」這支程式的 Google 帳號。
+ * 通知信是從執行帳號的信箱寄出的，而且該帳號必須能編輯紀錄試算表，所以請用這個帳號部署。
+ * 不是這個帳號時，執行記錄會出現警告（不影響運作）。
+ */
+const EXPECTED_OWNER = '12chengya@gmail.com'
+
 /** 「送出時間」一律用台北時間顯示（試算表預設可能是美國時區，會差十幾個小時） */
 const TIME_ZONE = 'Asia/Taipei'
 const TIME_FORMAT = 'yyyy/MM/dd HH:mm:ss'
 
 /** 程式版本：用瀏覽器打開網頁應用程式網址，會看到這個值，可確認部署的是不是新版 */
-const SCRIPT_VERSION = 'taipei-time-2026-11-16-c'
+const SCRIPT_VERSION = 'notify-2-recipients-2026-11-16-d'
+
+/** 目前是哪個 Google 帳號在執行這支程式（網頁應用程式＝部署時選的「執行身分」） */
+function executingAccount() {
+  try {
+    return Session.getEffectiveUser().getEmail() || '（讀不到）'
+  } catch (err) {
+    return '（讀不到）'
+  }
+}
 
 /**
  * 試算表存的日期時間，其實只是「牆上時鐘的數字」，沒有時區；改試算表時區不會改變已存的數字。
@@ -109,7 +125,7 @@ function doPost(e) {
 
     if (NOTIFY_BY_EMAIL) {
       notify(row)
-      log('已寄出通知信')
+      log('已寄出通知信：由 ' + executingAccount() + ' 寄出，共 ' + NOTIFY_TO.length + ' 位收件人')
     }
     return json({ ok: true })
   } catch (err) {
@@ -128,7 +144,14 @@ function doPost(e) {
 /** 用瀏覽器打開網址時顯示，方便確認部署成功 */
 function doGet() {
   // version：用來確認「部署出去的是不是最新版程式」，改程式時順手換個值
-  return json({ ok: true, service: '亞洲共創學院網站聯絡表單', version: SCRIPT_VERSION, timeZone: TIME_ZONE })
+  // notifyCount 只回報「通知信有幾位收件人」，不公開信箱
+  return json({
+    ok: true,
+    service: '亞洲共創學院網站聯絡表單',
+    version: SCRIPT_VERSION,
+    timeZone: TIME_ZONE,
+    notifyCount: NOTIFY_TO.length,
+  })
 }
 
 /** 開頭是 = + - @ 的內容在試算表中會被當成公式，前面加 ' 讓它保持純文字 */
@@ -184,12 +207,25 @@ function getSheet() {
   return sheet
 }
 
+/** 印出「誰在執行」與「通知信寄給誰」，並在帳號不是預期的那個時給警告 */
+function checkOwner() {
+  const me = executingAccount()
+  log('執行身分：' + me)
+  log('通知信收件人：' + NOTIFY_TO.join('、') + '（共 ' + NOTIFY_TO.length + ' 位，只寄給這幾位）')
+  if (me !== EXPECTED_OWNER) {
+    log('⚠ 目前是用 ' + me + ' 執行，預期是 ' + EXPECTED_OWNER + '。通知信會從 ' + me + ' 的信箱寄出，且此帳號需要能編輯紀錄試算表；建議改用 ' + EXPECTED_OWNER + ' 部署。')
+  } else {
+    log('執行身分符合預期')
+  }
+}
+
 /**
  * 手動執行一次即可：把試算表時區改成台北，並統一「送出時間」格式。
  * 會印出最新一列在試算表上「實際顯示」的時間，方便跟現在的台北時間對照。
  */
 function setupTaipeiTime() {
   log('程式版本 ' + SCRIPT_VERSION + '，開始套用台北時間')
+  checkOwner()
   const sheet = getSheet()
   const ss = sheet.getParent()
   log('試算表：' + ss.getName() + '　分頁：' + sheet.getName() + '　目前共 ' + sheet.getLastRow() + ' 列')
@@ -267,6 +303,29 @@ function notify(row) {
     subject: '【網站洽詢】' + row.need + '｜' + row.name,
     body: body,
   })
+}
+
+/**
+ * 手動執行：寄一封「測試通知信」給 NOTIFY_TO 的每個信箱，不會寫入試算表。
+ * 用來確認「收件人是不是只有那幾個」，不用真的送出表單。
+ * 執行後到各信箱（含垃圾郵件匣）找主旨「【網站洽詢】測試信（可刪除）」。
+ */
+function testNotify() {
+  checkOwner()
+  if (!NOTIFY_TO.length) return log('NOTIFY_TO 是空的，沒有寄出')
+  MailApp.sendEmail({
+    to: NOTIFY_TO.join(','),
+    subject: '【網站洽詢】測試信（可刪除）',
+    body: [
+      '這是 Apps Script 的測試通知信，可直接刪除。',
+      '',
+      '寄出時間：' + taipeiNow() + '（台北時間）',
+      '執行身分（寄件帳號）：' + executingAccount(),
+      '程式版本：' + SCRIPT_VERSION,
+      '收件人：' + NOTIFY_TO.join('、'),
+    ].join('\n'),
+  })
+  log('已寄出測試信給：' + NOTIFY_TO.join('、') + '　今日剩餘寄信額度：' + MailApp.getRemainingDailyQuota())
 }
 
 function json(obj) {
