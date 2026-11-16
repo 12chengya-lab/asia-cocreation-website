@@ -181,8 +181,29 @@ function toggle(force?: boolean) {
       if (!isPhone()) inputEl.value?.focus()
     })
   } else {
+    // 按 ✕（或再按一次浮動按鈕、Esc）關閉：等收合動畫結束後清空對話，下次打開是全新的
+    resetOnClose = true
     launcherEl.value?.focus()
   }
+}
+
+/** 關閉動畫結束後才清空，避免收合時畫面先變空白 */
+let resetOnClose = false
+function onPanelClosed() {
+  if (!resetOnClose || open.value) return
+  resetOnClose = false
+  resetConversation()
+}
+
+/** 對話、已問過的題目與單位類型全部歸零 */
+function resetConversation() {
+  messages.value = []
+  asked.clear()
+  queue = Promise.resolve()
+  typing.value = false
+  input.value = ''
+  audience.value = null
+  audienceChosen.value = false
 }
 
 /** 手機版小幫手是全螢幕，點按鈕跳頁後要收起來，才看得到新頁面 */
@@ -191,17 +212,14 @@ function onNavigate() {
 }
 
 function restart() {
-  messages.value = []
-  asked.clear()
-  queue = Promise.resolve()
-  typing.value = false
+  resetConversation()
   start()
 }
 </script>
 
 <template>
   <div class="faq" :class="{ 'is-open': open }" @keydown.esc="open && toggle(false)">
-    <Transition name="faq-pop">
+    <Transition name="faq-pop" @after-leave="onPanelClosed">
       <section
         v-show="open"
         id="faq-panel"

@@ -129,21 +129,39 @@ import { services } from '@/data/services'
   line-height: 1.95;
 }
 
-/* 分類標籤：放在卡片底部，各卡片對齊 */
+/* 分類標籤：放在卡片底部，各卡片對齊；一律單行，卡片變窄時字級與間距跟著縮小 */
+.svc__card {
+  container-type: inline-size;
+}
+
 .svc__points {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 0.4em;
   margin-top: auto;
   padding-top: 20px;
+  font-size: clamp(0.7rem, 4.4cqw, 0.85rem);
 }
 
 .svc__points li {
-  padding: 4px 12px;
+  flex: 0 0 auto;
+  padding: 0.3em 0.65em;
   border-radius: 999px;
   border: 1px solid var(--c-line-strong);
   color: var(--c-text-2);
-  font-size: 0.85rem;
+  font-size: 1em;
+  white-space: nowrap;
+}
+
+/* 卡片夠寬時恢復較舒適的間距 */
+@container (min-width: 300px) {
+  .svc__points {
+    gap: 0.5em;
+  }
+
+  .svc__points li {
+    padding-inline: 0.9em;
+  }
 }
 
 /* 平板：2 × 2 */

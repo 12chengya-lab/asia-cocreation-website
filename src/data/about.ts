@@ -238,16 +238,3 @@ export const aboutCases = {
     },
   ] satisfies AboutCase[],
 }
-
-/* ---------- SECTION 06｜合作洽詢（頁尾前的 CTA 區塊） ---------- */
-export const aboutContact = {
-  eyebrow: "Let's Co-create",
-  title: '讓下一段學習，從我們的交流開始',
-  /** 每個字串是一段 */
-  desc: [
-    '每一個培訓計畫，都有不同的目標與期待。',
-    '無論是政府人才培育、學校產學課程，或是企業團隊的專業成長，亞洲共創都期待先從理解需求開始，與合作夥伴共同討論課程主題、師資安排及實作方式。',
-  ],
-  slogan: '共創，不只是一起完成一件事，更是在過程中，讓彼此都能有所收穫。',
-  primary: { label: '與我們合作', to: '/contact' },
-}

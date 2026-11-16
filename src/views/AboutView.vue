@@ -10,7 +10,6 @@ import AboutOrigin from '@/components/about/AboutOrigin.vue'
 import AboutEvolution from '@/components/about/AboutEvolution.vue'
 import AboutServices from '@/components/about/AboutServices.vue'
 import CtaBanner from '@/components/CtaBanner.vue'
-import { aboutContact } from '@/data/about'
 </script>
 
 <template>
@@ -30,7 +29,7 @@ import { aboutContact } from '@/data/about'
     <!-- SECTION 05｜合作服務：四張服務卡片（AboutServices.vue，內容見 services.ts） -->
     <AboutServices />
 
-    <!-- SECTION 06｜合作洽詢（沿用共用的 CtaBanner.vue，文案在 about.ts 的 aboutContact） -->
-    <CtaBanner :content="aboutContact" />
+    <!-- SECTION 06｜合作洽詢（與其他頁面相同的共用 CtaBanner.vue，文案在 home.ts 的 ctaSection） -->
+    <CtaBanner />
   </div>
 </template>
