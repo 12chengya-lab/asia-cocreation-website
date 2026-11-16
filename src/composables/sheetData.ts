@@ -16,7 +16,10 @@ import { aboutCases, type AboutCase } from '@/data/about'
 type Row = Record<string, string>
 type Status = 'loading' | 'sheet' | 'local'
 
+/** 快取超過這個時間，就在背景向試算表要新資料（Google 發布本身也有約 5 分鐘快取） */
 const CACHE_MS = 5 * 60 * 1000
+/** 快取最多保留多久；更舊的資料不拿來先顯示，直接等新資料 */
+const STALE_MAX_MS = 7 * 24 * 60 * 60 * 1000
 const TIMEOUT_MS = 8000
 
 /* ---------- CSV ---------- */
@@ -314,39 +317,45 @@ function toSettings(rows: Row[]) {
   return rows.filter((r) => r.key).map((r) => ({ key: r.key, value: r.value ?? '' }))
 }
 
-/* ---------- 讀取與快取 ---------- */
+/* ---------- 讀取與快取 ----------
+   先用上次存下的試算表內容立刻顯示（照片網址馬上就有，照片也能直接用瀏覽器快取），
+   資料超過 CACHE_MS 再在背景抓新的，內容有變才更新畫面。
+   存在 localStorage：只存網站公開內容，不含訪客資料；重新進站也能沿用。 */
 
-function readCache(key: string) {
+interface CacheEntry {
+  at: number
+  text: string
+}
+
+const cacheKey = (url: string) => `sheet:${url}`
+
+function readCache(url: string): CacheEntry | null {
   try {
-    const raw = sessionStorage.getItem(key)
+    const raw = localStorage.getItem(cacheKey(url))
     if (!raw) return null
-    const { at, text } = JSON.parse(raw) as { at: number; text: string }
-    return Date.now() - at < CACHE_MS ? text : null
+    const entry = JSON.parse(raw) as CacheEntry
+    if (typeof entry?.text !== 'string' || Date.now() - entry.at > STALE_MAX_MS) return null
+    return entry
   } catch {
     return null
   }
 }
 
-function writeCache(key: string, text: string) {
+function writeCache(url: string, text: string) {
   try {
-    sessionStorage.setItem(key, JSON.stringify({ at: Date.now(), text }))
+    localStorage.setItem(cacheKey(url), JSON.stringify({ at: Date.now(), text } satisfies CacheEntry))
   } catch {
-    /* 無痕模式等無法儲存時略過 */
+    /* 無痕模式、空間不足等無法儲存時略過 */
   }
 }
 
 async function fetchCsv(url: string) {
-  const key = `sheet:${url}`
-  const cached = readCache(key)
-  if (cached) return cached
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
   try {
     const res = await fetch(url, { signal: ctrl.signal })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const text = await res.text()
-    writeCache(key, text)
-    return text
+    return await res.text()
   } finally {
     clearTimeout(timer)
   }
@@ -364,17 +373,39 @@ function createSource<T>(
   const status = shallowRef<Status>(url ? 'loading' : 'local')
   let started = false
 
+  /** 套用一份 CSV；內容不能用時丟出錯誤 */
+  function apply(text: string) {
+    const list = convert(toRows(text))
+    if (!list.length && !allowEmpty) throw new Error('試算表沒有可顯示的資料')
+    items.value = list
+    status.value = 'sheet'
+  }
+
   function load() {
     if (started || !url) return
     started = true
+
+    const cached = readCache(url)
+    let shown = false
+    if (cached) {
+      try {
+        apply(cached.text)
+        shown = true
+      } catch {
+        /* 快取內容不能用，等新資料 */
+      }
+      if (shown && Date.now() - cached.at < CACHE_MS) return
+    }
+
     fetchCsv(url)
       .then((text) => {
-        const list = convert(toRows(text))
-        if (!list.length && !allowEmpty) throw new Error('試算表沒有可顯示的資料')
-        items.value = list
-        status.value = 'sheet'
+        // 內容沒變就不重畫，只更新快取時間
+        if (!(shown && cached?.text === text)) apply(text)
+        writeCache(url, text)
       })
       .catch((err) => {
+        // 已經用快取顯示了，就繼續用快取，不退回內建資料
+        if (shown) return
         console.warn(`[試算表] ${label}讀取失敗，改用內建資料：`, err)
         items.value = local
         status.value = 'local'
