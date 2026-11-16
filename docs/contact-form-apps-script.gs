@@ -17,6 +17,9 @@
  * 之後若修改這份程式，要到「部署 → 管理部署作業 → 編輯 → 版本：新版本」重新部署，
  * 網址不會改變。
  *
+ * 時間：「送出時間」顯示台北時間（Asia/Taipei）。第一次執行時會把這份試算表的時區改成台北，
+ * 舊紀錄也會一起變成台北時間；也可以在編輯器手動執行 setupTaipeiTime() 立刻套用。
+ *
  * ⚠ 隱私：這份試算表含有訪客的個人資料，請勿「發布到網路」，也不要共用給「知道連結的任何人」。
  */
 
@@ -31,6 +34,10 @@ const SHEET_NAME = '聯絡表單'
 
 /** 收到表單時是否寄 Email 通知（寄到部署這個程式的帳號） */
 const NOTIFY_BY_EMAIL = true
+
+/** 「送出時間」一律用台北時間顯示（試算表預設可能是美國時區，會差十幾個小時） */
+const TIME_ZONE = 'Asia/Taipei'
+const TIME_FORMAT = 'yyyy/MM/dd HH:mm:ss'
 
 const HEADERS = ['送出時間', '姓名', '單位名稱', '電子郵件', '合作需求', '留言', '來源頁面', '處理狀態']
 
@@ -87,6 +94,8 @@ function safeCell(value) {
 function getSheet() {
   // 用 ID 開啟：不論程式是附加在試算表上、或是獨立的 Apps Script 專案都能運作
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID)
+  // 時間存的是正確的時刻，只是顯示用試算表的時區；改成台北後，舊紀錄也會一起變成台北時間
+  if (ss.getSpreadsheetTimeZone() !== TIME_ZONE) ss.setSpreadsheetTimeZone(TIME_ZONE)
   let sheet = ss.getSheetByName(SHEET_NAME)
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME)
@@ -104,7 +113,17 @@ function getSheet() {
       .build()
     sheet.getRange(2, HEADERS.length, 1000, 1).setDataValidation(rule)
   }
+  // 「送出時間」整欄（含舊資料）統一格式：2026/11/16 14:30:05
+  sheet.getRange('A2:A').setNumberFormat(TIME_FORMAT)
   return sheet
+}
+
+/**
+ * 手動執行一次即可：把試算表時區改成台北，並統一「送出時間」格式。
+ * 不想等下一筆表單送出時，在 Apps Script 編輯器選這個函式按「執行」。
+ */
+function setupTaipeiTime() {
+  getSheet()
 }
 
 function notify(row) {
