@@ -4,6 +4,11 @@ export function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+/** 平滑捲回頁面頂端（開啟「減少動態效果」時直接跳回） */
+export function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+}
+
 /* ---------- v-reveal：捲動進入畫面時淡入 ---------- */
 let revealObserver: IntersectionObserver | null = null
 

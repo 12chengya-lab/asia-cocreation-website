@@ -4,8 +4,14 @@ import { useRoute } from 'vue-router'
 import { Menu, X, ArrowUpRight } from '@lucide/vue'
 import BaseButton from './BaseButton.vue'
 import { brand, navItems } from '@/data/site'
+import { scrollToTop } from '@/composables/motion'
 
 const route = useRoute()
+
+/** 點 Logo／校名：其他頁面由 RouterLink 回首頁；已在首頁時連結不會觸發換頁，改為捲回頂端 */
+function onBrandClick() {
+  if (route.path === '/') scrollToTop()
+}
 const scrolled = ref(false)
 const open = ref(false)
 const headerEl = ref<HTMLElement | null>(null)
@@ -55,7 +61,7 @@ onBeforeUnmount(() => {
   >
     <div class="nav__wrap">
       <div class="nav__bar">
-        <RouterLink to="/" class="nav__brand" aria-label="亞洲共創學院 回到首頁">
+        <RouterLink to="/" class="nav__brand" aria-label="亞洲共創學院 回到首頁" @click="onBrandClick">
           <img :src="brand.navLogoSrc" :alt="brand.navLogoAlt" class="nav__logo" width="282" height="240" />
           <span class="nav__name">{{ brand.name }}</span>
         </RouterLink>

@@ -3,9 +3,16 @@ import { ArrowUp } from '@lucide/vue'
 import BrandLogo from './BrandLogo.vue'
 import ContactMap from './ContactMap.vue'
 import { brand, footerNavItems, contact, footerContactFields } from '@/data/site'
-import { prefersReducedMotion } from '@/composables/motion'
+import { useRoute } from 'vue-router'
+import { scrollToTop } from '@/composables/motion'
 
+const route = useRoute()
 const year = new Date().getFullYear()
+
+/** 點頁尾 Logo：其他頁面由 RouterLink 回首頁；已在首頁時改為捲回頂端 */
+function onBrandClick() {
+  if (route.path === '/') scrollToTop()
+}
 
 /** 服務時間的午休說明（全形括號起）換到下一行，其餘欄位維持一行 */
 function footLines(key: string, value: string) {
@@ -14,9 +21,7 @@ function footLines(key: string, value: string) {
   return i > 0 ? [value.slice(0, i).trim(), value.slice(i)] : [value]
 }
 
-function backToTop() {
-  window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
-}
+const backToTop = scrollToTop
 </script>
 
 <template>
@@ -57,7 +62,7 @@ function backToTop() {
 
         <!-- 右側：Logo、簡介，下方是公司地址的 Google 地圖小地圖 -->
         <div class="foot__brand">
-          <RouterLink to="/" aria-label="亞洲共創學院 回到首頁" class="foot__logo">
+          <RouterLink to="/" aria-label="亞洲共創學院 回到首頁" class="foot__logo" @click="onBrandClick">
             <BrandLogo show-company />
           </RouterLink>
           <p class="foot__intro">{{ brand.intro }}</p>
