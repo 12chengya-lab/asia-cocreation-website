@@ -18,3 +18,12 @@ export const kpis: Kpi[] = [
   { key: 'teachers', label: '合作講師', value: 46, suffix: '', unit: '位' },
   { key: 'learners', label: '學員人數', value: 51460, suffix: '', unit: '名' },
 ]
+
+/**
+ * 給其他頁面的文案引用的數字，例如 kpiText('teachers') → '46 位'。
+ * 全站提到開課、合作單位、講師、學員數量時都用這裡，改上面的 value 就會一起更新。
+ */
+export function kpiText(key: Kpi['key']) {
+  const k = kpis.find((item) => item.key === key)
+  return k ? `${k.value.toLocaleString('en-US')}${k.suffix} ${k.unit}` : ''
+}

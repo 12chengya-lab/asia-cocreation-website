@@ -11,12 +11,13 @@ import {
   Megaphone,
   PencilRuler,
 } from '@lucide/vue'
+import { kpiText } from './dashboard'
 
 export const lecturersSection = {
   eyebrow: 'Lecturers & Consultants',
   title: '講師顧問聯盟',
   highlight: '顧問聯盟',
-  desc: '集結逾百位合作業師，涵蓋職涯探索、品牌行銷與自媒體經營等領域。',
+  desc: `集結 ${kpiText('teachers')}合作講師，涵蓋職涯探索、品牌行銷與自媒體經營等領域。`,
 }
 
 export const casesSection = {

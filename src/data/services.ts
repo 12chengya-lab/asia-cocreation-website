@@ -6,6 +6,8 @@
      pending: true 代表內容尚待企業補充，畫面會顯示「待補」標記。
    ========================================================= */
 
+import { kpiText } from './dashboard'
+
 export type ServiceIcon = 'graduation' | 'mic' | 'megaphone' | 'compass'
 
 export interface Service {
@@ -40,7 +42,7 @@ export const services: Service[] = [
     no: '03',
     icon: 'mic',
     title: '講師經紀',
-    summary: '媒合逾百位合作業師，依課程主題與對象推薦合適講師，讓培訓與活動順利進行。',
+    summary: `媒合 ${kpiText('teachers')}合作講師，依課程主題與對象推薦合適講師，讓培訓與活動順利進行。`,
     points: ['講師媒合', '課程與講座', '業師資源'],
   },
   {

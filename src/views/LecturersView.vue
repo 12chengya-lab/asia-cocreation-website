@@ -8,6 +8,7 @@ import CtaBanner from '@/components/CtaBanner.vue'
 import { lecturerAudiences, lecturerFields, lecturerFormats, type Lecturer } from '@/data/lecturers'
 import { useLecturers } from '@/composables/sheetData'
 import { lecturerApplySection } from '@/data/home'
+import { kpiText } from '@/data/dashboard'
 
 const route = useRoute()
 const router = useRouter()
@@ -151,7 +152,7 @@ function onDialogClick(e: MouseEvent) {
 const joinLink = lecturerApplySection.primary.to
 
 /** 副標分兩行：第二行從「可依專業…」開始 */
-const headerDesc = '集結逾百位合作業師，涵蓋職涯探索、品牌行銷與自媒體經營等領域，\n可依專業、對象與授課形式找到合適講師。'
+const headerDesc = `集結 ${kpiText('teachers')}合作講師，涵蓋職涯探索、品牌行銷與自媒體經營等領域，\n可依專業、對象與授課形式找到合適講師。`
 
 const inviteLink = computed(() =>
   current.value ? { path: '/contact', query: { topic: 'lecturer', lecturer: current.value.name } } : '/contact',
