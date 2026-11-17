@@ -505,10 +505,39 @@ export function useOptions() {
   }
 }
 
+/* ---------- 講師排列順序 ---------- */
+
+/** 前幾位固定不動（依試算表 order 排出來的前 N 位） */
+const LECTURER_PINNED_TOP = 4
+/** 名字含這幾個字的那一筆，固定排在最後 */
+const LECTURER_LAST_NAME = '亞洲共創'
+/** 繁體中文筆畫排序（瀏覽器內建，依 Unicode 的筆畫資料；同姓再比第二個字） */
+const strokeCollator = new Intl.Collator('zh-Hant-TW-u-co-stroke')
+const startsWithHan = (name: string) => /^\p{Script=Han}/u.test(name.trim())
+
+/**
+ * 講師聯盟的顯示順序：
+ * 1. 依試算表 order 排出的前 4 位固定不動
+ * 2. 其餘依姓氏（名字第一個字）的繁體中文筆畫排序；英文等非中文名字排在中文名字之後，依字母
+ * 3. 「亞洲共創」固定排在最後
+ */
+export function arrangeLecturers(list: Lecturer[]): Lecturer[] {
+  const isLast = (l: Lecturer) => l.name.includes(LECTURER_LAST_NAME)
+  const last = list.filter(isLast)
+  const others = list.filter((l) => !isLast(l))
+  const top = others.slice(0, LECTURER_PINNED_TOP)
+  const rest = others.slice(LECTURER_PINNED_TOP).sort(
+    (a, b) =>
+      Number(!startsWithHan(a.name)) - Number(!startsWithHan(b.name)) ||
+      strokeCollator.compare(a.name.trim(), b.name.trim()),
+  )
+  return [...top, ...rest, ...last]
+}
+
 /** 講師資料（試算表優先，失敗用內建資料） */
 export function useLecturers() {
   lecturerSource.load()
-  const lecturers = computed(() => lecturerSource.items.value)
+  const lecturers = computed(() => arrangeLecturers(lecturerSource.items.value))
   return {
     lecturers,
     loading: computed(() => lecturerSource.status.value === 'loading'),
