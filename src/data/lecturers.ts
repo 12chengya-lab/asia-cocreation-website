@@ -15,7 +15,7 @@
    ========================================================= */
 
 /** 專業領域（篩選選項，順序即按鈕順序） */
-export const lecturerFields = ['職涯探索', '品牌行銷', '自媒體經營', 'AI 應用', '領導管理', '溝通簡報'] as const
+export const lecturerFields = ['職涯探索', '品牌行銷', '自媒體經營', 'AI 應用', '領導管理', '溝通簡報', '經營管理'] as const
 
 /** 適合對象 */
 export const lecturerAudiences = ['企業內訓', '學校／產學合作', '政府計畫'] as const
@@ -57,6 +57,7 @@ const sampleTopics: Record<LecturerField, string[]> = {
   'AI 應用': ['生成式 AI 工具', 'AI 辦公效率', '提示詞設計'],
   領導管理: ['團隊領導', '目標管理', '跨部門協作'],
   溝通簡報: ['簡報技巧', '公眾表達', '提案溝通'],
+  經營管理: ['經營策略', '組織與人才管理', '績效與專案管理'],
 }
 
 function sample(
