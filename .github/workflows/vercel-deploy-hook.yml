@@ -1,0 +1,25 @@
+# 協作者推到 main 時，Vercel 免費方案不會自動部署（私人 repo 只部署擁有者的 commit）。
+# 這個流程在每次推到 main 時呼叫 Vercel Deploy Hook，讓最新的 main 上線。
+# Deploy Hook 網址存在 GitHub「Settings → Secrets and variables → Actions」的 VERCEL_DEPLOY_HOOK。
+name: Vercel deploy hook
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # 擁有者（12chengya@gmail.com）推的 commit Vercel 會自己部署，不用重複觸發
+    if: github.event_name == 'workflow_dispatch' || github.event.head_commit.author.email != '12chengya@gmail.com'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deployment
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK secret is not set"
+            exit 1
+          fi
+          curl -fsS -X POST "$HOOK"
