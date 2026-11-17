@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
     <div class="nav__wrap">
       <div class="nav__bar">
         <RouterLink to="/" class="nav__brand" aria-label="亞洲共創學院 回到首頁" @click="onBrandClick">
-          <img :src="brand.navLogoSrc" :alt="brand.navLogoAlt" class="nav__logo" width="282" height="240" />
+          <img :src="brand.navLogoSrc" :alt="brand.navLogoAlt" class="nav__logo" width="301" height="360" />
           <span class="nav__name">{{ brand.name }}</span>
         </RouterLink>
 

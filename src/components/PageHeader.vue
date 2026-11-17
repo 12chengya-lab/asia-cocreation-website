@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ChevronRight } from '@lucide/vue'
+import PhraseText from '@/components/PhraseText.vue'
 
 const props = defineProps<{
   eyebrow: string
@@ -35,7 +36,7 @@ const descChars = computed(() => Math.max(...descLines.value.map((l) => l.length
           </ol>
         </nav>
         <span class="eyebrow ph__eyebrow">{{ eyebrow }}</span>
-        <h1 class="ph__title">{{ title }}</h1>
+        <h1 class="ph__title"><PhraseText :text="title" /></h1>
         <p
           v-if="desc"
           class="ph__desc"
@@ -154,7 +155,8 @@ const descChars = computed(() => Math.max(...descLines.value.map((l) => l.length
 }
 
 .ph__title {
-  max-width: 760px;
+  /* 768px：桌機字級下一行剛好放得下 11 個中文字，「國際數位行銷人才實戰班」不會被擠成三行 */
+  max-width: 768px;
   font-size: clamp(2.3rem, 5.4vw, 4.2rem);
   font-weight: 900;
   line-height: 1.2;
