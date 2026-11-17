@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import CaseCard from './CaseCard.vue'
 import CaseSwiper from './CaseSwiper.vue'
-import { caseCategories, type CaseCategory } from '@/data/cases'
+import type { CaseCategory } from '@/data/cases'
 import { useCases } from '@/composables/sheetData'
 
 const props = withDefaults(defineProps<{ limit?: number; layout?: 'grid' | 'swiper' }>(), {
@@ -10,8 +10,11 @@ const props = withDefaults(defineProps<{ limit?: number; layout?: 'grid' | 'swip
   layout: 'grid',
 })
 
-const { cases, loading } = useCases()
+const { cases, categories, loading } = useCases()
 const active = ref<'all' | CaseCategory>('all')
+
+/** 頁籤：「全部案例」＋試算表「選項」分頁的案例分類（依該欄順序） */
+const tabs = computed(() => [{ key: 'all', label: '全部案例' }, ...categories.value])
 
 const filtered = computed(() => {
   const list = active.value === 'all' ? cases.value : cases.value.filter((c) => c.category === active.value)
@@ -31,7 +34,7 @@ function countOf(key: 'all' | CaseCategory) {
       <div class="cs__tools">
         <div class="cs__filters" role="group" aria-label="案例分類篩選">
           <button
-            v-for="cat in caseCategories"
+            v-for="cat in tabs"
             :key="cat.key"
             type="button"
             class="cs__filter"

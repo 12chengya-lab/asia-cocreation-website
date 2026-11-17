@@ -5,14 +5,16 @@ import { Search, X, UserRound, ArrowRight, SearchX } from '@lucide/vue'
 import PageHeader from '@/components/PageHeader.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import CtaBanner from '@/components/CtaBanner.vue'
-import { lecturerAudiences, lecturerFields, lecturerFormats, type Lecturer } from '@/data/lecturers'
-import { useLecturers } from '@/composables/sheetData'
+import type { Lecturer } from '@/data/lecturers'
+import { useLecturers, useOptions } from '@/composables/sheetData'
 import { lecturerApplySection } from '@/data/home'
 import { kpiText } from '@/data/dashboard'
 
 const route = useRoute()
 const router = useRouter()
 const { lecturers, loading, hasSample } = useLecturers()
+/** 篩選按鈕的順序：試算表「選項」分頁（讀不到時用 src/data/lecturers.ts 的內建清單） */
+const options = useOptions()
 
 /** 照片網址失效時改顯示預設頭像 */
 const brokenPhotos = ref(new Set<string>())
@@ -22,7 +24,7 @@ const markBroken = (id: string) => (brokenPhotos.value = new Set(brokenPhotos.va
 /* ---------- 篩選條件（同步到網址，篩選結果可以分享或加入書籤） ---------- */
 /**
  * 篩選按鈕＝試算表「講師」分頁裡實際出現的標籤：
- * 內建清單（src/data/lecturers.ts）裡有的照原順序排前面，試算表新增的標籤依出現次數接在後面；
+ * 「選項」分頁有列的照該欄順序排前面，其他標籤依出現次數接在後面；
  * 沒有任何講師使用的標籤不顯示。
  */
 function tagOptions(known: readonly string[], used: string[]) {
@@ -34,9 +36,9 @@ function tagOptions(known: readonly string[], used: string[]) {
 }
 
 const groups = computed(() => [
-  { key: 'field' as const, label: '專業領域', options: tagOptions(lecturerFields, lecturers.value.flatMap((l) => l.fields)) },
-  { key: 'aud' as const, label: '適合對象', options: tagOptions(lecturerAudiences, lecturers.value.flatMap((l) => l.audiences)) },
-  { key: 'fmt' as const, label: '授課形式', options: tagOptions(lecturerFormats, lecturers.value.flatMap((l) => l.formats)) },
+  { key: 'field' as const, label: '專業領域', options: tagOptions(options.fields.value, lecturers.value.flatMap((l) => l.fields)) },
+  { key: 'aud' as const, label: '適合對象', options: tagOptions(options.audiences.value, lecturers.value.flatMap((l) => l.audiences)) },
+  { key: 'fmt' as const, label: '授課形式', options: tagOptions(options.formats.value, lecturers.value.flatMap((l) => l.formats)) },
 ])
 type GroupKey = 'field' | 'aud' | 'fmt'
 

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { ArrowRight } from '@lucide/vue'
 import CaseVisual from './CaseVisual.vue'
-import { categoryLabel, type CaseItem } from '@/data/cases'
+import { categoryName, type CaseItem } from '@/data/cases'
 
 const props = defineProps<{ item: CaseItem }>()
 
@@ -17,7 +17,7 @@ const excerpt = computed(() => (/^示意內容/.test(props.item.excerpt) ? '' : 
     </RouterLink>
     <div class="cc__body">
       <div class="cc__meta">
-        <span class="cc__cat">{{ categoryLabel[item.category] }}</span>
+        <span class="cc__cat">{{ categoryName(item.category) }}</span>
       </div>
       <h3 class="cc__title">
         <RouterLink :to="`/cases/${item.id}`">{{ item.title }}</RouterLink>

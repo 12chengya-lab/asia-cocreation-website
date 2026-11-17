@@ -1,7 +1,19 @@
 import { computed, shallowRef, type ShallowRef } from 'vue'
 import { sheetSources } from '@/data/sheets'
-import { lecturers as localLecturers, type Lecturer } from '@/data/lecturers'
-import { cases as localCases, categoryLabel, type CaseCategory, type CaseItem } from '@/data/cases'
+import {
+  lecturers as localLecturers,
+  lecturerAudiences,
+  lecturerFields,
+  lecturerFormats,
+  type Lecturer,
+} from '@/data/lecturers'
+import {
+  cases as localCases,
+  categoryKey,
+  defaultCaseCategories,
+  type CaseCategory,
+  type CaseItem,
+} from '@/data/cases'
 import { localNews, NEWS_LIMIT, type NewsItem, type NewsSort } from '@/data/news'
 import { localArticles, type Article } from '@/data/trends'
 import { aboutCases, type AboutCase } from '@/data/about'
@@ -136,24 +148,18 @@ function toLecturers(rows: Row[]): Lecturer[] {
   return byOrder(out)
 }
 
-const categoryByLabel: Record<string, CaseCategory> = Object.fromEntries(
-  Object.entries(categoryLabel).flatMap(([key, label]) => [
-    [label, key as CaseCategory],
-    [key, key as CaseCategory],
-  ]),
-)
-
 function toCases(rows: Row[]): CaseItem[] {
   const out = rows
     .map((r, index) => {
       if (!bool(r.show, true) || !r.title) return null
       // sample 欄為「是」的示意案例不對外顯示，補好內容並改成「否」後才會出現
       if (bool(r.sample, false)) return null
-      const category = categoryByLabel[r.category?.trim()]
-      if (!category) {
-        console.warn(`[試算表] 案例「${r.title}」的分類「${r.category}」無法辨識，已略過`)
+      // 分類是否有效，要對照「選項」分頁（見 useCases），這裡先只換成代號
+      if (!r.category?.trim()) {
+        console.warn(`[試算表] 案例「${r.title}」沒有填分類，已略過`)
         return null
       }
+      const category: CaseCategory = categoryKey(r.category)
       const item: CaseItem = {
         id: (r.id || `case-${index + 1}`).replace(/[^\w-]/g, '-'),
         category,
@@ -317,6 +323,56 @@ function toSettings(rows: Row[]) {
   return rows.filter((r) => r.key).map((r) => ({ key: r.key, value: r.value ?? '' }))
 }
 
+/* ---------- 選項分頁：篩選按鈕與案例分類 ---------- */
+
+export interface SiteOptions {
+  /** 講師專業領域 */
+  fields: string[]
+  /** 講師適合對象 */
+  audiences: string[]
+  /** 講師授課形式 */
+  formats: string[]
+  /** 案例分類（名稱，例如「政府計畫」） */
+  caseCategories: string[]
+}
+type OptionGroup = keyof SiteOptions
+interface OptionItem {
+  group: OptionGroup
+  value: string
+}
+
+/** 「選項」分頁的欄位標題（中文為主，也接受英文） */
+const OPTION_HEADERS: Record<OptionGroup, string[]> = {
+  fields: ['專業領域', 'fields'],
+  audiences: ['適合對象', 'audiences'],
+  formats: ['授課形式', 'formats'],
+  caseCategories: ['案例分類', 'caseCategories', 'category'],
+}
+
+/** 讀不到「選項」分頁時使用的內建清單 */
+const localOptions: SiteOptions = {
+  fields: [...lecturerFields],
+  audiences: [...lecturerAudiences],
+  formats: [...lecturerFormats],
+  caseCategories: [...defaultCaseCategories],
+}
+
+/** 每一欄由上往下讀：空白略過、「※」或「#」開頭的說明略過、重複的只留一個 */
+function toOptions(rows: Row[]): OptionItem[] {
+  const out: OptionItem[] = []
+  for (const group of Object.keys(OPTION_HEADERS) as OptionGroup[]) {
+    const seen = new Set<string>()
+    for (const r of rows) {
+      const header = OPTION_HEADERS[group].find((h) => h in r)
+      const value = header ? (r[header] ?? '').trim() : ''
+      if (!value || /^[※#]/.test(value) || seen.has(value)) continue
+      seen.add(value)
+      out.push({ group, value })
+    }
+  }
+  return out
+}
+
 /* ---------- 讀取與快取 ----------
    先用上次存下的試算表內容立刻顯示（照片網址馬上就有，照片也能直接用瀏覽器快取），
    資料超過 CACHE_MS 再在背景抓新的，內容有變才更新畫面。
@@ -424,6 +480,30 @@ const articleSource = createSource(sheetSources.trends, localArticles, toArticle
 const trainingSource = createSource(sheetSources.training, aboutCases.items, toTrainingCases, '培訓案例')
 const originSource = createSource(sheetSources.originPhotos, [], toOriginPhotos, '關於亞創輪播', true)
 const settingSource = createSource(sheetSources.settings, [], toSettings, '設定', true)
+const localOptionItems: OptionItem[] = (Object.keys(localOptions) as OptionGroup[]).flatMap((group) =>
+  localOptions[group].map((value) => ({ group, value })),
+)
+const optionSource = createSource(sheetSources.options ?? '', localOptionItems, toOptions, '選項')
+
+/**
+ * 篩選按鈕與案例分類的選項（試算表「選項」分頁，順序即顯示順序）。
+ * 某一欄在試算表是空的或讀不到時，該欄改用程式內建清單。
+ */
+export function useOptions() {
+  optionSource.load()
+  const pick = (group: OptionGroup) =>
+    computed(() => {
+      const list = optionSource.items.value.filter((o) => o.group === group).map((o) => o.value)
+      return list.length ? list : localOptions[group]
+    })
+  return {
+    fields: pick('fields'),
+    audiences: pick('audiences'),
+    formats: pick('formats'),
+    caseCategories: pick('caseCategories'),
+    loading: computed(() => optionSource.status.value === 'loading'),
+  }
+}
 
 /** 講師資料（試算表優先，失敗用內建資料） */
 export function useLecturers() {
@@ -441,12 +521,19 @@ export function useLecturers() {
   }
 }
 
-/** 案例資料（試算表優先，失敗用內建資料） */
+/**
+ * 案例資料（試算表優先，失敗用內建資料）。
+ * 只顯示分類有列在「選項」分頁「案例分類」欄的案例：分類寫錯字的列不會出現（與以往相同）。
+ */
 export function useCases() {
   caseSource.load()
-  const cases = computed(() => caseSource.items.value)
+  const { caseCategories } = useOptions()
+  const allowed = computed(() => new Set(caseCategories.value.map(categoryKey)))
+  const cases = computed(() => caseSource.items.value.filter((c) => allowed.value.has(c.category)))
   return {
     cases,
+    /** 分類頁籤：依「選項」分頁的順序（與以往相同，沒有案例的分類也會列出，數量顯示 0） */
+    categories: computed(() => caseCategories.value.map((label) => ({ key: categoryKey(label), label }))),
     loading: computed(() => caseSource.status.value === 'loading'),
     hasSample: computed(() => cases.value.some((c) => c.placeholder)),
   }

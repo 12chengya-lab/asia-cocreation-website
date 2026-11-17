@@ -78,6 +78,7 @@ docs/                 contact-form-apps-script.gs、content-sheet-template.xlsx
 | 趨勢專欄 | 趨勢專欄列表與文章內頁 | 無（沒有文章時顯示「建置中」） |
 | 培訓案例 | 學習地圖頁的培訓案例卡片 | `src/data/about.ts` 的 `aboutCases` |
 | 關於亞創輪播 | 關於亞創頁「從自媒體課堂開始的學習旅程」照片輪播 | `src/data/about.ts` 的 `aboutOrigin.photo` |
+| 選項 | 講師篩選按鈕（專業領域、適合對象、授課形式）與案例分類頁籤的選項和順序；在這裡新增選項，網站就會出現，不用改程式 | `src/data/lecturers.ts`、`src/data/cases.ts` 的內建清單 |
 | 設定 | 目前有 `newsSort`：熱門課程超過 5 則時，依「排序數字」或「日期最新」取捨 | — |
 
 - 連接設定：`src/data/sheets.ts`。每個分頁都要在試算表「檔案 → 共用 → 發布到網路」以 CSV 格式發布，並把網址填進 `sheetSources`。新增分頁後，也要到「已發布的內容與設定」勾選該分頁。

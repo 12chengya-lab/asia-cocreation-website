@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Landmark, GraduationCap, Building2 } from '@lucide/vue'
+import { Landmark, GraduationCap, Building2, FolderOpen } from '@lucide/vue'
 import type { CaseItem } from '@/data/cases'
 
 /** 案例圖片；未提供圖片或圖片載入失敗時，顯示抽象示意圖（非真實照片） */
 const props = defineProps<{ item: CaseItem }>()
-const icons = { government: Landmark, academia: GraduationCap, enterprise: Building2 }
-const icon = computed(() => icons[props.item.category])
+/** 內建三類有專屬圖示與底色；在試算表「選項」新增的分類用通用圖示（other） */
+const icons: Record<string, typeof Landmark> = { government: Landmark, academia: GraduationCap, enterprise: Building2 }
+const known = computed(() => props.item.category in icons)
+const icon = computed(() => icons[props.item.category] ?? FolderOpen)
+const variant = computed(() => (known.value ? props.item.category : 'other'))
 const broken = ref(false)
 watch(() => props.item.image, () => (broken.value = false))
 </script>
 
 <template>
-  <div class="cv" :class="`cv--${item.category}`">
+  <div class="cv" :class="`cv--${variant}`">
     <img
       v-if="item.image && !broken"
       :src="item.image"
@@ -64,6 +67,10 @@ watch(() => props.item.image, () => (broken.value = false))
 
 .cv--enterprise .cv__ph {
   background-color: #ecece9;
+}
+
+.cv--other .cv__ph {
+  background-color: #f3f3f0;
 }
 
 .cv__ring {

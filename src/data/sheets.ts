@@ -38,6 +38,12 @@ export const sheetSources = {
    * ※ 留空字串＝使用 src/data/about.ts 的 aboutOrigin.photo；沒有任何照片時也會用它
    */
   originPhotos: `${PUBLISHED}?gid=2135969155&single=true&output=csv`,
+  /**
+   * 「選項」分頁：講師篩選按鈕（專業領域、適合對象、授課形式）與案例分類頁籤的選項與順序。
+   * 欄位：是否、專業領域、適合對象、授課形式、案例分類（每欄往下一格一個選項；「※」開頭的說明會略過）
+   * ※ 在這裡新增選項，網站就會出現，不用改程式；讀不到時改用 lecturers.ts／cases.ts 的內建清單
+   */
+  options: `${PUBLISHED}?gid=99796713&single=true&output=csv`,
   /** 「設定」分頁：欄位 key, value（目前有 newsSort：熱門課程超過 5 則時依「排序數字」或「日期最新」取捨） */
   settings: `${PUBLISHED}?gid=1355113418&single=true&output=csv`,
 }

@@ -8,19 +8,35 @@
      image 請放在 public/cases/，填入路徑例如 '/cases/case-01.jpg'。
    ========================================================= */
 
-export type CaseCategory = 'government' | 'academia' | 'enterprise'
+/**
+ * 案例分類代號。內建三類用固定英文代號（網址、圖示、配色用）；
+ * 在試算表「選項」分頁新增的分類，代號就是分類名稱本身（例如「社區活動」）。
+ */
+export type CaseCategory = string
 
-export const caseCategories: { key: 'all' | CaseCategory; label: string }[] = [
-  { key: 'all', label: '全部案例' },
-  { key: 'government', label: '政府計畫' },
-  { key: 'academia', label: '產學合作' },
-  { key: 'enterprise', label: '企業內訓' },
-]
-
-export const categoryLabel: Record<CaseCategory, string> = {
+/** 內建的三個分類：代號 → 名稱（試算表「選項」分頁讀不到時，分類頁籤用這三個） */
+export const categoryLabel: Record<string, string> = {
   government: '政府計畫',
   academia: '產學合作',
   enterprise: '企業內訓',
+}
+
+/** 內建分類名稱（依顯示順序），作為「選項」分頁讀不到時的備用清單 */
+export const defaultCaseCategories = Object.values(categoryLabel)
+
+const keyByLabel: Record<string, string> = Object.fromEntries(
+  Object.entries(categoryLabel).map(([key, label]) => [label, key]),
+)
+
+/** 分類名稱 → 代號：內建三類回傳英文代號，其他分類代號就是名稱本身；也接受直接填英文代號 */
+export function categoryKey(labelOrKey: string) {
+  const text = labelOrKey.trim()
+  return keyByLabel[text] ?? text
+}
+
+/** 分類代號 → 顯示名稱 */
+export function categoryName(key: CaseCategory) {
+  return categoryLabel[key] ?? key
 }
 
 export interface CaseItem {

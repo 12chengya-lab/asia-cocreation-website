@@ -6,7 +6,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import CaseGallery from '@/components/CaseGallery.vue'
 import CaseCard from '@/components/CaseCard.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import { categoryLabel } from '@/data/cases'
+import { categoryName } from '@/data/cases'
 import { useCases } from '@/composables/sheetData'
 
 const route = useRoute()
@@ -39,7 +39,7 @@ watchEffect(() => {
   <div class="page">
     <template v-if="item">
       <PageHeader
-        :eyebrow="categoryLabel[item.category]"
+        :eyebrow="categoryName(item.category)"
         :title="item.title"
         :crumbs="[{ label: '實務總覽', to: '/cases' }, { label: item.title }]"
       >
