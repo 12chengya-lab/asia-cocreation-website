@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { ArrowRight } from '@lucide/vue'
 import CaseVisual from './CaseVisual.vue'
+import PhraseText from './PhraseText.vue'
 import { categoryName, type CaseItem } from '@/data/cases'
 
 const props = defineProps<{ item: CaseItem }>()
@@ -20,7 +21,8 @@ const excerpt = computed(() => (/^示意內容/.test(props.item.excerpt) ? '' : 
         <span class="cc__cat">{{ categoryName(item.category) }}</span>
       </div>
       <h3 class="cc__title">
-        <RouterLink :to="`/cases/${item.id}`">{{ item.title }}</RouterLink>
+        <!-- 依詞組換行，避免「培訓」被拆成「培｜訓」 -->
+        <RouterLink :to="`/cases/${item.id}`"><PhraseText :text="item.title" /></RouterLink>
       </h3>
       <p class="cc__excerpt">{{ excerpt }}</p>
       <RouterLink :to="`/cases/${item.id}`" class="link-arrow cc__more" tabindex="-1" aria-hidden="true">
@@ -90,6 +92,8 @@ const excerpt = computed(() => (/^示意內容/.test(props.item.excerpt) ? '' : 
   margin-top: 12px;
   font-size: 1.2rem;
   line-height: 1.5;
+  /* 兩行時長度平均，避免第二行只剩一兩個詞 */
+  text-wrap: balance;
 }
 
 /* 讓整張卡片可點擊，同時保留單一可聚焦連結 */

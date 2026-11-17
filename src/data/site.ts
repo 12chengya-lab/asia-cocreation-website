@@ -13,8 +13,8 @@ export const brand = {
    */
   logoSrc: '',
   logoAlt: '亞洲共創學院 Logo',
-  /** 導覽列使用的 Logo（新版：圖示＋「亞洲共創學院 ASIA ALLIANCE 2020」字樣，透明背景，已裁掉四周留白） */
-  navLogoSrc: '/brand/logo-asia-alliance-2020.png',
+  /** 導覽列使用的 Logo（橫式：圖示在左、「亞洲共創學院 ASIA ALLIANCE 2020」字樣在右，透明背景，已裁掉四周留白，875×200） */
+  navLogoSrc: '/brand/logo-asia-alliance-2020-horizontal.png',
   navLogoAlt: '亞洲共創學院 Asia Alliance 2020',
   intro: '亞洲共創學院提供教育培訓、專業課程規劃及相關合作服務，連結政府、企業與人才發展需求。',
 }
