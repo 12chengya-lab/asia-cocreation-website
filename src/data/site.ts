@@ -11,8 +11,8 @@ export const brand = {
   /**
    * 含文字的完整 Logo（圖文一體）：填入後會取代「圖示＋文字」整組，例如 '/brand/logo.svg'
    */
-  logoSrc: '',
-  logoAlt: '亞洲共創學院 Logo',
+  logoSrc: '/brand/logo-asia-alliance-2020-horizontal.png',
+  logoAlt: '亞洲共創學院 Asia Alliance 2020',
   /** 導覽列使用的 Logo（橫式：圖示在左、「亞洲共創學院 ASIA ALLIANCE 2020」字樣在右，透明背景，已裁掉四周留白，875×200） */
   navLogoSrc: '/brand/logo-asia-alliance-2020-horizontal.png',
   navLogoAlt: '亞洲共創學院 Asia Alliance 2020',

@@ -6,7 +6,7 @@ withDefaults(defineProps<{ showCompany?: boolean }>(), { showCompany: false })
 
 <template>
   <span class="logo">
-    <img v-if="brand.logoSrc" :src="brand.logoSrc" :alt="brand.logoAlt" class="logo__img" />
+    <img v-if="brand.logoSrc" :src="brand.logoSrc" :alt="brand.logoAlt" class="logo__img" width="875" height="200" />
     <template v-else>
       <img v-if="brand.markSrc" :src="brand.markSrc" alt="" class="logo__mark" />
       <!-- 暫代標誌：未設定 markSrc 時使用 -->
@@ -30,8 +30,10 @@ withDefaults(defineProps<{ showCompany?: boolean }>(), { showCompany: false })
   gap: 10px;
 }
 
+/* 橫式圖文一體 Logo（與導覽列同一張） */
 .logo__img {
-  height: 40px;
+  display: block;
+  height: 52px;
   width: auto;
 }
 
